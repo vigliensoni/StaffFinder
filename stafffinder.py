@@ -2,6 +2,16 @@ import math
 from gamera.core import *
 from gamera.toolkits import musicstaves
 
+from optparse import OptionParser
+import os
+
+import logging
+lg = logging.getLogger('StaffFinder')
+f = logging.Formatter("%(levelname)s %(asctime)s On Line: %(lineno)d %(message)s")
+h = logging.StreamHandler()
+h.setFormatter(f)
+lg.setLevel(logging.DEBUG)
+lg.addHandler(h)
 
 pi = 3.14159265358979
 
@@ -185,46 +195,6 @@ def vector_mean(vector):
 
 
 
-# MAIN CODE
-filepath = '/Volumes/Shared/Gabriel/Salzinnes_Output/StaffOnly/1-001v.tif'
-filename = filepath.split('/')[-1]
-candidate_points = staffvector_retriever(filepath)
-
-global_stfspc = 0         
-
-
-for i, vector in enumerate(candidate_points):
-    # print vector
-    stfspc = staffspace_height(vector)
-    if stfspc > global_stfspc:   # calculates the biggest, global staff space in a page
-        global_stfspc = stfspc
-    candidate_points[i] = despeckle(vector, global_stfspc)
-    candidate_points[i] = missed_points_writer(vector, stfspc)
-
-# print candidate_points
-x_hor_v = []
-for vector in candidate_points:
-    if len(vector)>5:   # more than 1 staff
-        x_hor_v.append(vector[0])
-
-y_hor_v = horizontal_vector(candidate_points, 1)
-
-
-print "vector mean: {0} \nx_hor_v {1}\ny_hor_v {2}".format(vector_mean(y_hor_v), x_hor_v, y_hor_v)
-
-a, b, RR = linreg(x_hor_v, y_hor_v)
-print a, b
-
-nv = []
-for i in range(len(x_hor_v)):
-    nv.append([x_hor_v[i], int(a*x_hor_v[i]+b)])
-
-print nv
-new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'test.tif', nv)
-image_rgb = drawcplistimage(filepath, filename, candidate_points)
-print "YIPI"
-
-quit()
 
 
 
@@ -232,81 +202,51 @@ quit()
 
 
 
+if __name__ == "__main__":
+    usage = "usage: %prog [options] image_file_path"
+    opts = OptionParser(usage = usage)
+    options, args = opts.parse_args()
+    
+    if not args:
+        opts.error("You must supply arguments to this script as \nimage file path")
+
+    filepath = args[0]
+    # filepath = '/Volumes/Shared/Gabriel/Salzinnes_Output/StaffOnly/1-001v.tif'
+    filename = filepath.split('/')[-1]
+    candidate_points = staffvector_retriever(filepath)
+
+    global_stfspc = 0         
+
+    for i, vector in enumerate(candidate_points):
+        # print vector
+        stfspc = staffspace_height(vector)
+        if stfspc > global_stfspc:   # calculates the biggest, global staff space in a page
+            global_stfspc = stfspc
+        candidate_points[i] = despeckle(vector, global_stfspc)
+        candidate_points[i] = missed_points_writer(vector, stfspc)
+
+    # print candidate_points
+    x_hor_v = []
+    for vector in candidate_points:
+        if len(vector)>5:   # more than 1 staff
+            x_hor_v.append(vector[0])
+    y_hor_v = horizontal_vector(candidate_points, 1)
 
 
+    print "vector mean: {0} \nx_hor_v {1}\ny_hor_v {2}".format(vector_mean(y_hor_v), x_hor_v, y_hor_v)
 
+    a, b, RR = linreg(x_hor_v, y_hor_v)
+    print a, b
 
-### DISCARDING X POINTS WITHOUT Y VALUES, CREATING THE NEW SET OF CANDIDATES
-candidate_points = new_candidate_set(candidate_points)
-max_vector_length = max_vector_length(candidate_points)
-horizontal_vectors = vertical_representation(candidate_points, max_vector_length)
+    nv = []
+    for i in range(len(x_hor_v)):
+        nv.append([x_hor_v[i], int(a*x_hor_v[i]+b)])
 
-print "OLD VECTOR:\n"
-for h in horizontal_vectors:
-    print h
+    print nv
+    new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'test.tif', nv)
+    image_rgb = drawcplistimage(filepath, filename, candidate_points)
 
-for i, h in enumerate(horizontal_vectors[1:]):
-    print h, len(h) 
-    newvector, idx_to_change = discard_outliers(h, len(h))
-    for idx in idx_to_change:
-        idx_removed_value = horizontal_vectors[i+1].pop(idx)
-        print "IDX VALUE: {0}".format(idx_removed_value)
-        horizontal_vectors[i+1].insert(idx, idx_removed_value)
-
-print "NEW VECTOR:\n"
-for h in horizontal_vectors:
-    print h
-
-# print "NEW CANDIDATE SET:\n{0},\nMAX VECTOR LENGHT:\n{1}".format(candidate_points, max_vector_length)
-
-
-quit()
-
-
-
-
-### DISCARDING OUTLIERS
-points = selected_points
-indexes_to_change = []
-sum_relation = 0
-number_of_points = len(points)
-for i in range(number_of_points - 1):
-    relation = (float(points[i+1])/float(points[i]))
-
-    if 1.1 > relation > 0.9: # MAGIC NUMBERS, CHECK
-        sum_relation = sum_relation + relation
-        
-    else: 
-        number_of_points = number_of_points - 1
-        indexes_to_change.append(i)
-    print i, points[i], relation
-
-slope = sum_relation / (number_of_points - 1)
-new_value = int(points[indexes_to_change[0] + 1]* slope)
-
-print "SLOPE: {0}".format(slope)
-print "NEW VALUE: {0}".format(new_value)
-print "INDEXES TO CHANGE: {0}".format(indexes_to_change)
-candidate_points[indexes_to_change[0]].insert(1, new_value)
-print "NEW CANDIDATE POINTS: {0}".format(candidate_points)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    print "\nDone!\n"
 
 
 
