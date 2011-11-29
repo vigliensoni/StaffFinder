@@ -7,7 +7,7 @@ import os
 
 import logging
 lg = logging.getLogger('StaffFinder')
-f = logging.Formatter("%(levelname)s %(asctime)s On Line: %(lineno)d %(message)s")
+f = logging.Formatter("%(levelname)s %(asctime)s On Line: %(lineno)d %(message)s\n")
 h = logging.StreamHandler()
 h.setFormatter(f)
 lg.setLevel(logging.DEBUG)
@@ -166,8 +166,7 @@ def missed_points_writer(vector, stfspc):
 
 def drawcplistimage(filepath, filename, cplist):
     """Plots crosses in the page according to the candidate points position list"""
-    # filename='test1234.png'
-    rgb = load_image('/Users/gabriel/Desktop/blank.png')
+    rgb = load_image('/Users/gabriel/Desktop/blank.png') # USING BLANK IMAGE AS CANVAS. CHANGE THIS.
     for cp in cplist:
         for y_point in cp[1:]:
             rgb.draw_marker(FloatPoint(cp[0], y_point), 7, 1, RGBPixel(0, 0, 255))
@@ -177,14 +176,13 @@ def drawcplistimage(filepath, filename, cplist):
     return rgb
 
 def horizontal_vector(candidate_points, row_no):
-    """Creates a vector of only first candidate point values"""
+    """Creates a horizontal vector with all candidate point values for a certain row"""
     hor_v = []
     for i, v in enumerate(candidate_points):
         if len(v) < 6:   # 4 lines, for now. 
             pass
         else:
             hor_v.append(v[row_no])
-            hor_v.reverse() #reverse because y- in the page starts at the top
     return hor_v
            
 def vector_mean(vector):
@@ -208,43 +206,56 @@ if __name__ == "__main__":
     options, args = opts.parse_args()
     
     if not args:
-        opts.error("You must supply arguments to this script as \nimage file path")
+        opts.error("You must supply arguments to this script as \nimage_file_path")
 
     filepath = args[0]
-    # filepath = '/Volumes/Shared/Gabriel/Salzinnes_Output/StaffOnly/1-001v.tif'
     filename = filepath.split('/')[-1]
+    
     candidate_points = staffvector_retriever(filepath)
 
     global_stfspc = 0         
 
+
+    # DESPECKLING CLOSER POINTS AND WRITING MISSED POINTS
+    #######################
     for i, vector in enumerate(candidate_points):
-        # print vector
         stfspc = staffspace_height(vector)
         if stfspc > global_stfspc:   # calculates the biggest, global staff space in a page
             global_stfspc = stfspc
-        candidate_points[i] = despeckle(vector, global_stfspc)
+        candidate_points[i] = despeckle(vector, stfspc)
         candidate_points[i] = missed_points_writer(vector, stfspc)
 
-    # print candidate_points
-    x_hor_v = []
+    lg.debug("\nCANDIDATE POINTS WITH REWRITTEN MISSED POINTS:\n{0}\n".format(candidate_points))
+
+    #  CREATING A VECTOR WITH THE FIRST POINTS ((X,Y) FROM THE TOP OF THE PAGE)
+    # USING LINEAR REGRESSION
+    #######################
+    new_candidate_points = [] # final matrix with corrected points
+    x_hor_v = [] # Holds the values for all x-points
+
+
     for vector in candidate_points:
         if len(vector)>5:   # more than 1 staff
-            x_hor_v.append(vector[0])
-    y_hor_v = horizontal_vector(candidate_points, 1)
+            x_hor_v.append(vector[0]) 
 
+    lg.debug ("\nFIXED X-POINTS ARE \n{0}".format(x_hor_v))
 
-    print "vector mean: {0} \nx_hor_v {1}\ny_hor_v {2}".format(vector_mean(y_hor_v), x_hor_v, y_hor_v)
+    for j in range(len(candidate_points)-1):                          # ALL ROWS
+        nv = []
+        y_hor_v = horizontal_vector(candidate_points, j+1)
+        lg.debug("\nROW {1}:\n{0}".format(y_hor_v, j))
+        a, b, RR = linreg(x_hor_v, y_hor_v)
+        for i in range(len(y_hor_v)):                               # ALL COLUMNS
+            # lg.debug("\nX:{0}\nY:{1}".format(x_hor_v[i], int(a*x_hor_v[i]+b)))
+            nv.append(int(a*x_hor_v[i]+b))
+            # nv.append([x_hor_v[i], int(a*x_hor_v[i]+b)])
+        # lg.debug("\nnv:\n{0}".format(nv))
+        # new_candidate_points.append(nv)
+        print nv
 
-    a, b, RR = linreg(x_hor_v, y_hor_v)
-    print a, b
-
-    nv = []
-    for i in range(len(x_hor_v)):
-        nv.append([x_hor_v[i], int(a*x_hor_v[i]+b)])
-
-    print nv
-    new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'test.tif', nv)
-    image_rgb = drawcplistimage(filepath, filename, candidate_points)
+    # lg.debug("\nNewVector:\n{0}".format(new_candidate_points))
+    # new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'_LinReg.tif', new_candidate_points)
+    # image_rgb = drawcplistimage(filepath, filename, candidate_points)
 
     print "\nDone!\n"
 
