@@ -228,6 +228,9 @@ if __name__ == "__main__":
 
     # lg.debug("\nCANDIDATE POINTS WITH REWRITTEN MISSED POINTS:\n{0}\n".format(candidate_points))
 
+    for v in candidate_points:
+        print v
+
     #  CREATING A VECTOR WITH THE FIRST POINTS ((X,Y) FROM THE TOP OF THE PAGE)
     # USING LINEAR REGRESSION
     #######################
@@ -246,12 +249,20 @@ if __name__ == "__main__":
         for j in range(len(new_candidate_points[i])):
             try:
                 print new_candidate_points[j][i],
+                dif = new_candidate_points[j+1][i]-new_candidate_points[j][i]
+                # print dif, 
+                if dif > global_stfspc*0.5:
+                    new_candidate_points[j+1][i] = int(0.5*(new_candidate_points[j+2][i] + new_candidate_points[j][i]))
+                    print ("{0}C".format(new_candidate_points[j+1][i])), 
             except:
                 continue
         print
+    
 
 
-    quit()
+
+
+
 
     # for vl in range(len(candidate_points)):
     #     for i in range(5):
@@ -296,7 +307,7 @@ if __name__ == "__main__":
 
     # PLOTTING TO A FILE
     ####################
-    new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'_LinReg.tif', candidate_points)
+    new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'_LinReg.tif', new_candidate_points)
     # image_rgb = drawcplistimage(filepath, filename, candidate_points)
 
     print "\nDone!\n"
