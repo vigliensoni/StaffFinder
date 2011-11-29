@@ -7,7 +7,7 @@ import os
 
 import logging
 lg = logging.getLogger('StaffFinder')
-f = logging.Formatter("%(levelname)s %(asctime)s On Line: %(lineno)d %(message)s\n")
+f = logging.Formatter("%(levelname)s %(asctime)s On Line: %(lineno)d %(message)s")
 h = logging.StreamHandler()
 h.setFormatter(f)
 lg.setLevel(logging.DEBUG)
@@ -169,9 +169,10 @@ def drawcplistimage(filepath, filename, cplist):
     rgb = load_image('/Users/gabriel/Desktop/blank.png') # USING BLANK IMAGE AS CANVAS. CHANGE THIS.
     for cp in cplist:
         for y_point in cp[1:]:
+            # lg.debug("X:{0}, Y:{1}".format(cp[0], y_point))
             rgb.draw_marker(FloatPoint(cp[0], y_point), 7, 1, RGBPixel(0, 0, 255))
 
-    print("writing " + filename + "\n")
+    print("writing " + filename)
     rgb.save_PNG(filename)
     return rgb
 
@@ -225,7 +226,7 @@ if __name__ == "__main__":
         candidate_points[i] = despeckle(vector, stfspc)
         candidate_points[i] = missed_points_writer(vector, stfspc)
 
-    lg.debug("\nCANDIDATE POINTS WITH REWRITTEN MISSED POINTS:\n{0}\n".format(candidate_points))
+    # lg.debug("\nCANDIDATE POINTS WITH REWRITTEN MISSED POINTS:\n{0}\n".format(candidate_points))
 
     #  CREATING A VECTOR WITH THE FIRST POINTS ((X,Y) FROM THE TOP OF THE PAGE)
     # USING LINEAR REGRESSION
@@ -234,27 +235,68 @@ if __name__ == "__main__":
     x_hor_v = [] # Holds the values for all x-points
 
 
-    for vector in candidate_points:
-        if len(vector)>5:   # more than 1 staff
-            x_hor_v.append(vector[0]) 
+    for v in candidate_points:
+        if len(v) > 5:
+            new_candidate_points.append(v)
+    # lg.debug("\nCANDIDATE POINTS WITHOUT SHORT VECTORS:\n{0}\n".format(new_candidate_points))            
 
-    lg.debug ("\nFIXED X-POINTS ARE \n{0}".format(x_hor_v))
+    vector_length = len(new_candidate_points)
 
-    for j in range(len(candidate_points)-1):                          # ALL ROWS
-        nv = []
-        y_hor_v = horizontal_vector(candidate_points, j+1)
-        lg.debug("\nROW {1}:\n{0}".format(y_hor_v, j))
-        a, b, RR = linreg(x_hor_v, y_hor_v)
-        for i in range(len(y_hor_v)):                               # ALL COLUMNS
+    for i in range(vector_length):
+        for j in range(len(new_candidate_points[i])):
+            try:
+                print new_candidate_points[j][i],
+            except:
+                continue
+        print
+
+
+    quit()
+
+    # for vl in range(len(candidate_points)):
+    #     for i in range(5):
+    #         try:
+    #             print candidate_points[vl][i],
+    #         except:
+    #             continue
+
+
+
+    # print candidate_points
+        # nv = []
+        # y_hor_v = horizontal_vector(candidate_points, j+1)
+        # a, b, RR = linreg(x_hor_v, y_hor_v)
+
+        # lg.debug("\nROW {1}:\n{0}\na:{2}, b:{3}".format(y_hor_v, j, a, b))
+        # for i in range(len(y_hor_v) - 1):                               # ALL COLUMNS
+        #     dif = y_hor_v[i + 1] - y_hor_v[i]
+        #     if dif > global_stfspc:
+        #         y_hor_v[i + 1] = int(a*x_hor_v[i]+b)
+        #         print 'changed'
+        # print y_hor_v
+
+
+
+
             # lg.debug("\nX:{0}\nY:{1}".format(x_hor_v[i], int(a*x_hor_v[i]+b)))
-            nv.append(int(a*x_hor_v[i]+b))
-            # nv.append([x_hor_v[i], int(a*x_hor_v[i]+b)])
+            # nv.append(int(a*x_hor_v[i]+b))
+
         # lg.debug("\nnv:\n{0}".format(nv))
         # new_candidate_points.append(nv)
-        print nv
+    #     new_candidate_points.append(nv)
 
-    # lg.debug("\nNewVector:\n{0}".format(new_candidate_points))
-    # new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'_LinReg.tif', new_candidate_points)
+    # for i, x in enumerate(x_hor_v):
+        # new_candidate_points[i].insert(0,x)
+
+
+    # lg.debug("\nNEW CANDIDATE POINTS USING LINEAR REGRESSION:\n{0}".format(new_candidate_points))
+
+
+
+
+    # PLOTTING TO A FILE
+    ####################
+    new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'_LinReg.tif', candidate_points)
     # image_rgb = drawcplistimage(filepath, filename, candidate_points)
 
     print "\nDone!\n"
