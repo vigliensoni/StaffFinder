@@ -4,6 +4,7 @@ from gamera.toolkits import musicstaves
 
 from optparse import OptionParser
 import os
+from PIL import Image
 
 import logging
 lg = logging.getLogger('StaffFinder')
@@ -193,7 +194,73 @@ def vector_mean(vector):
     nums = [int(x) for x in vector]
     return sum(nums)/len(nums)
 
+def pop_insert(matrix, line_no, global_stfpsc):
+    """Pops out the minimum difference in x-value of a specific line in a Matrix, and inserts a value 
+    based on linear regression whereas is the maximum difference. The differences are calculated
+    among the vector's actual values and the fitness function calculated for that vector"""
+    x_vector = [] # Holds the values for all x-points
+    y_vector = []
+    pop_x_vector = []
+    pop_y_vector = []
+    linreg_y_vector = []
 
+    # FINDING THE INDEXES WITH THE MAXIMUM AND MINIMUM COST
+    new_cand_length = len(new_candidate_points)
+    x_vector = [new_candidate_points[i][0] for i in xrange(len(new_candidate_points))]
+    y_vector = [new_candidate_points[i][line_no] for i in xrange(len(new_candidate_points))]
+
+    # lg.debug("\nX_VECTOR:{0}\nY_VECTR{2}:{1}".format(x_vector, y_vector, line_no))
+    a, b, RR = linreg(x_vector, y_vector)
+    lg.debug("RR:{0}".format(RR))
+    for i in range(new_cand_length):
+        linreg_y_vector.append(int(a*x_vector[i]+b))
+    
+    # lg.debug("\nCORR Y_VECTOR:{0}".format(corr_y_vector))
+    # lg.debug("\nDIFFERENCES:{0}\n".format([y_vector[i]-corr_y_vector[i] for i in range(len(y_vector))]))
+
+
+    dif = [(y_vector[i]-linreg_y_vector[i]) for i in xrange(len(y_vector))]
+    dif_abs = [abs(y_vector[i]-linreg_y_vector[i]) for i in xrange(len(y_vector))]
+    max_dif = max(dif_abs)
+    idx_max_dif = dif_abs.index(max_dif)
+    lg.debug("LINE {3}, DIFFERENCES:{0}, MAX DIF:{1}, IDX:{2}".format(dif, max_dif, idx_max_dif, line_no))
+    pop_x_vector = x_vector
+    pop_y_vector = y_vector
+  
+    pop_x_vector.pop(idx_max_dif)
+    pop_y_vector.pop(idx_max_dif)
+    # lg.debug("popXvector:{0}, popYvector:{1}".format(pop_x_vector, pop_y_vector))
+
+    a1, b1, RR1 = linreg(pop_x_vector, pop_y_vector)
+    # lg.debug("a:{0}, b:{1}, x_vector[line_no]:{2}".format(a, b, new_candidate_points[idx_max_dif][0]))
+    # lg.debug("a1:{0}, b1:{1}, x_vector[line_no]:{2}".format(a1, b1, new_candidate_points[idx_max_dif][0]))
+    if dif[idx_max_dif] < 0:
+        new_candidate_points[idx_max_dif].pop(line_no)
+        print 'POP'
+    elif dif[idx_max_dif] > 0.5*global_stfspc:
+        new_candidate_points[idx_max_dif].insert(line_no, int(a1*new_candidate_points[idx_max_dif][0]+b1))
+        print 'INSERT'
+
+
+
+    # min_value = min(dif)
+    # idx_min_value = dif.index(min_value)
+    # max_value = max(dif)
+    # idx_max_value = dif.index(max_value)
+    # lg.debug("\nDIFFERENCES:{2}, MIN IDX:{0}, MAX IDX:{1}".format(idx_min_value, idx_max_value, dif))
+
+
+    # POPING THE MINIMUM VALUE AND INSERTING A NEW ONE BASED ON LINEAR REGRESSION
+    # if abs(min_value) > 0.75*global_stfspc:
+    #     new_candidate_points[idx_min_value].pop(line_no)
+    #     print 'POP'
+    # if abs(max_value) > 0.75*global_stfspc :
+    #     new_candidate_points[idx_max_value].insert(line_no, int(a*x_vector[line_no]+b))
+    #     print 'INSERT'
+    # lg.debug("\nCORRECT_DIFF:{0}\n".format([new_candidate_points[i][line_no]-linreg_y_vector[i] for i in range(len(y_vector))]))
+    # lg.debug("\nNCP: {0}".format(new_candidate_points))
+
+    return new_candidate_points
 
 
 
@@ -215,7 +282,7 @@ if __name__ == "__main__":
     filename = filepath.split('/')[-1]
     
     candidate_points = staffvector_retriever(filepath)
-    lg.debug("\nCANDIDATE POINTS:\n{0}\n".format(candidate_points)) 
+    # lg.debug("\nCANDIDATE POINTS:\n{0}\n".format(candidate_points)) 
     global_stfspc = 0         
 
     image_rgb = drawcplistimage(filepath, filename.split('.')[0]+'_ORIG.tif', candidate_points)
@@ -229,61 +296,40 @@ if __name__ == "__main__":
         candidate_points[i] = despeckle(vector, stfspc)
         # candidate_points[i] = missed_points_writer(vector, stfspc)
     # lg.debug("\nCANDIDATE POINTS WITH REWRITTEN MISSED POINTS:\n{0}".format(candidate_points))
-
+    # lg.debug("GLOBAL STAFFSPACE: \t{0}".format(global_stfspc))
 
 
     #  CREATING A VECTOR WITH THE FIRST POINTS ((X,Y) FROM THE TOP OF THE PAGE)
     # USING LINEAR REGRESSION
     #######################
+
     new_candidate_points = [] # final matrix with corrected points
-    x_vector = [] # Holds the values for all x-points
-    y_vector = []
-    corr_y_vector = []
+
     # CREATING NEW MATRIX WITH VALID CANDIDATE POINTS
     for v in candidate_points:
         if len(v) > 1:
             new_candidate_points.append(v)
-    lg.debug("\nNEW CANDIDATE POINTS:\n{0}\n".format(new_candidate_points))         
-
-    line_no = 1                                                               # only first line for the moment
-    # FINDING THE INDEXES WITH THE MAXIMUM AND MINIMUM COST
-    new_cand_length = len(new_candidate_points)
-    for i in range(new_cand_length):
-        x_vector.append(new_candidate_points[i][0])
-        y_vector.append(new_candidate_points[i][line_no])                         # only first line for the moment
-    lg.debug("\nY_VECTOR:{0}".format(y_vector))
-    a, b, RR = linreg(x_vector, y_vector)
-    print a, b
-
-    for i in range(new_cand_length):
-        corr_y_vector.append(int(a*x_vector[i]+b))
-    
-    lg.debug("\nCORR Y_VECTOR:{0}".format(corr_y_vector))
-    lg.debug("DIFFERENCES:\n{0}".format([y_vector[i]-corr_y_vector[i] for i in range(len(y_vector))]))
-
-    dif = [(y_vector[i]-corr_y_vector[i]) for i in range(len(y_vector))]
-    dif_abs = [abs(y_vector[i]-corr_y_vector[i]) for i in range(len(y_vector))]
-    min_value = min(dif)
-    idx_min_value = dif.index(min_value)
-    max_value = max(dif)
-    idx_max_value = dif.index(max_value)
-    lg.debug("MIN IDX:{0}, MAX IDX:{1}".format(idx_min_value, idx_max_value))
-
-    # POPING THE MINIMUM VALUE AND INSERTING A NEW ONE BASED ON LINEAR REGRESSION
-    new_candidate_points[idx_min_value].pop(line_no)
-    new_candidate_points[idx_max_value].insert(line_no, int(a*x_vector[line_no]+b))
-    print new_candidate_points
+    lg.debug("\nNCP:\n{0}".format(new_candidate_points))         
 
 
-    # ANOTHER LINEAR REGRESSION ITERATION
+    for line_no in xrange(7):
+        for i in xrange(20):
+            new_candidate_points = pop_insert(new_candidate_points, line_no+1, global_stfspc)
+
+
+    lg.debug("\n{0}".format(new_candidate_points))
+
 
 
 
     # PLOTTING TO A FILE
     ####################
     new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'_MEAN.tif', new_candidate_points)
+    # img = Image.open(os.path.join(filepath, filename.split('.')[0]+'_MEAN.tif'))
+    new_filepath = filepath.split('.')[0]+'_MEAN.tif'
 
-
+    img = Image.open(new_filepath)
+    img.show()
     print "\nDone!\n"
 
 
