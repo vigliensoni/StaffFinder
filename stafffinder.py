@@ -114,7 +114,7 @@ def staffvector_retriever(filename):
     """Retrieves and returns the candidate points"""
     image = load_image(filename)
     stafffinder = musicstaves.StaffFinder_gabriel(image)
-    candidate_points = stafffinder.find_staves(0, 40, 0.8, -1, 5)
+    candidate_points = stafffinder.find_staves(0, 20, 0.8, -1, 5)
     return candidate_points
 
 def staffspace_height(vector):
@@ -166,11 +166,13 @@ def missed_points_writer(vector, stfspc):
 
 def drawcplistimage(filepath, filename, cplist):
     """Plots crosses in the page according to the candidate points position list"""
-    rgb = load_image('/Users/gabriel/Desktop/blank.png') # USING BLANK IMAGE AS CANVAS. CHANGE THIS.
+    # rgb = load_image('/Users/gabriel/Desktop/blank.png') # USING BLANK IMAGE AS CANVAS. CHANGE THIS.
+    rgb = load_image(filepath)
+    rgb = rgb.to_rgb()
     for cp in cplist:
         for y_point in cp[1:]:
             # lg.debug("X:{0}, Y:{1}".format(cp[0], y_point))
-            rgb.draw_marker(FloatPoint(cp[0], y_point), 7, 1, RGBPixel(0, 0, 255))
+            rgb.draw_marker(FloatPoint(cp[0], y_point), 10, 3, RGBPixel(255, 0, 0))
 
     print("writing " + filename)
     rgb.save_PNG(filename)
@@ -213,9 +215,10 @@ if __name__ == "__main__":
     filename = filepath.split('/')[-1]
     
     candidate_points = staffvector_retriever(filepath)
-
+    lg.debug("\nCANDIDATE POINTS:\n{0}\n".format(candidate_points)) 
     global_stfspc = 0         
 
+    image_rgb = drawcplistimage(filepath, filename.split('.')[0]+'_ORIG.tif', candidate_points)
 
     # DESPECKLING CLOSER POINTS AND WRITING MISSED POINTS
     #######################
@@ -224,12 +227,10 @@ if __name__ == "__main__":
         if stfspc > global_stfspc:   # calculates the biggest, global staff space in a page
             global_stfspc = stfspc
         candidate_points[i] = despeckle(vector, stfspc)
-        candidate_points[i] = missed_points_writer(vector, stfspc)
+        # candidate_points[i] = missed_points_writer(vector, stfspc)
+    # lg.debug("\nCANDIDATE POINTS WITH REWRITTEN MISSED POINTS:\n{0}".format(candidate_points))
 
-    # lg.debug("\nCANDIDATE POINTS WITH REWRITTEN MISSED POINTS:\n{0}\n".format(candidate_points))
 
-    for v in candidate_points:
-        print v
 
     #  CREATING A VECTOR WITH THE FIRST POINTS ((X,Y) FROM THE TOP OF THE PAGE)
     # USING LINEAR REGRESSION
@@ -239,26 +240,31 @@ if __name__ == "__main__":
 
 
     for v in candidate_points:
-        if len(v) > 5:
+        if len(v) > 1:
             new_candidate_points.append(v)
-    # lg.debug("\nCANDIDATE POINTS WITHOUT SHORT VECTORS:\n{0}\n".format(new_candidate_points))            
+
+    lg.debug("\nNEW CANDIDATE POINTS:\n{0}\n".format(new_candidate_points))            
 
     vector_length = len(new_candidate_points)
 
     for i in range(vector_length):
         for j in range(len(new_candidate_points[i])):
-            try:
-                print new_candidate_points[j][i],
-                dif = new_candidate_points[j+1][i]-new_candidate_points[j][i]
-                # print dif, 
-                if dif > global_stfspc*0.5:
-                    new_candidate_points[j+1][i] = int(0.5*(new_candidate_points[j+2][i] + new_candidate_points[j][i]))
-                    print ("{0}C".format(new_candidate_points[j+1][i])), 
-            except:
-                continue
+                try:
+                    # print new_candidate_points[j][i],
+                    for idx in range(10):
+                        dif = abs(new_candidate_points[j+(idx+1)][i]-new_candidate_points[j][i])
+                        if dif > (0.5 * global_stfspc):
+                            continue
+                        else:
+                            new_candidate_points[j][i] = int(0.5*(new_candidate_points[j+(idx+1)][i] + new_candidate_points[j][i]))
+                    # print("{0}C".format(new_candidate_points[j+1][i]))
+                except:
+                    continue
+
         print
     
 
+ 
 
 
 
@@ -307,8 +313,8 @@ if __name__ == "__main__":
 
     # PLOTTING TO A FILE
     ####################
-    new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'_LinReg.tif', new_candidate_points)
-    # image_rgb = drawcplistimage(filepath, filename, candidate_points)
+    new_vectors = drawcplistimage(filepath, filename.split('.')[0]+'_MEAN.tif', new_candidate_points)
+
 
     print "\nDone!\n"
 
