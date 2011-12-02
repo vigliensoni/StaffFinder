@@ -174,7 +174,7 @@ def drawcplistimage(filepath, filename, cplist):
             # lg.debug("X:{0}, Y:{1}".format(cp[0], y_point))
             rgb.draw_marker(FloatPoint(cp[0], y_point), 10, 3, RGBPixel(255, 0, 0))
 
-    print("writing " + filename)
+    print("\nwriting " + filename)
     rgb.save_PNG(filename)
     return rgb
 
@@ -236,78 +236,46 @@ if __name__ == "__main__":
     # USING LINEAR REGRESSION
     #######################
     new_candidate_points = [] # final matrix with corrected points
-    x_hor_v = [] # Holds the values for all x-points
-
-
+    x_vector = [] # Holds the values for all x-points
+    y_vector = []
+    corr_y_vector = []
+    # CREATING NEW MATRIX WITH VALID CANDIDATE POINTS
     for v in candidate_points:
         if len(v) > 1:
             new_candidate_points.append(v)
+    lg.debug("\nNEW CANDIDATE POINTS:\n{0}\n".format(new_candidate_points))         
 
-    lg.debug("\nNEW CANDIDATE POINTS:\n{0}\n".format(new_candidate_points))            
+    line_no = 1                                                               # only first line for the moment
+    # FINDING THE INDEXES WITH THE MAXIMUM AND MINIMUM COST
+    new_cand_length = len(new_candidate_points)
+    for i in range(new_cand_length):
+        x_vector.append(new_candidate_points[i][0])
+        y_vector.append(new_candidate_points[i][line_no])                         # only first line for the moment
+    lg.debug("\nY_VECTOR:{0}".format(y_vector))
+    a, b, RR = linreg(x_vector, y_vector)
+    print a, b
 
-    vector_length = len(new_candidate_points)
-
-    for i in range(vector_length):
-        for j in range(len(new_candidate_points[i])):
-                try:
-                    # print new_candidate_points[j][i],
-                    for idx in range(10):
-                        dif = abs(new_candidate_points[j+(idx+1)][i]-new_candidate_points[j][i])
-                        if dif > (0.5 * global_stfspc):
-                            continue
-                        else:
-                            new_candidate_points[j][i] = int(0.5*(new_candidate_points[j+(idx+1)][i] + new_candidate_points[j][i]))
-                    # print("{0}C".format(new_candidate_points[j+1][i]))
-                except:
-                    continue
-
-        print
+    for i in range(new_cand_length):
+        corr_y_vector.append(int(a*x_vector[i]+b))
     
+    lg.debug("\nCORR Y_VECTOR:{0}".format(corr_y_vector))
+    lg.debug("DIFFERENCES:\n{0}".format([y_vector[i]-corr_y_vector[i] for i in range(len(y_vector))]))
 
- 
+    dif = [(y_vector[i]-corr_y_vector[i]) for i in range(len(y_vector))]
+    dif_abs = [abs(y_vector[i]-corr_y_vector[i]) for i in range(len(y_vector))]
+    min_value = min(dif)
+    idx_min_value = dif.index(min_value)
+    max_value = max(dif)
+    idx_max_value = dif.index(max_value)
+    lg.debug("MIN IDX:{0}, MAX IDX:{1}".format(idx_min_value, idx_max_value))
 
-
-
-
-
-    # for vl in range(len(candidate_points)):
-    #     for i in range(5):
-    #         try:
-    #             print candidate_points[vl][i],
-    #         except:
-    #             continue
-
-
-
-    # print candidate_points
-        # nv = []
-        # y_hor_v = horizontal_vector(candidate_points, j+1)
-        # a, b, RR = linreg(x_hor_v, y_hor_v)
-
-        # lg.debug("\nROW {1}:\n{0}\na:{2}, b:{3}".format(y_hor_v, j, a, b))
-        # for i in range(len(y_hor_v) - 1):                               # ALL COLUMNS
-        #     dif = y_hor_v[i + 1] - y_hor_v[i]
-        #     if dif > global_stfspc:
-        #         y_hor_v[i + 1] = int(a*x_hor_v[i]+b)
-        #         print 'changed'
-        # print y_hor_v
+    # POPING THE MINIMUM VALUE AND INSERTING A NEW ONE BASED ON LINEAR REGRESSION
+    new_candidate_points[idx_min_value].pop(line_no)
+    new_candidate_points[idx_max_value].insert(line_no, int(a*x_vector[line_no]+b))
+    print new_candidate_points
 
 
-
-
-            # lg.debug("\nX:{0}\nY:{1}".format(x_hor_v[i], int(a*x_hor_v[i]+b)))
-            # nv.append(int(a*x_hor_v[i]+b))
-
-        # lg.debug("\nnv:\n{0}".format(nv))
-        # new_candidate_points.append(nv)
-    #     new_candidate_points.append(nv)
-
-    # for i, x in enumerate(x_hor_v):
-        # new_candidate_points[i].insert(0,x)
-
-
-    # lg.debug("\nNEW CANDIDATE POINTS USING LINEAR REGRESSION:\n{0}".format(new_candidate_points))
-
+    # ANOTHER LINEAR REGRESSION ITERATION
 
 
 
