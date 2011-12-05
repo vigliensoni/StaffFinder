@@ -223,18 +223,7 @@ def pop_insert(matrix, line_no, global_stfpsc):
             lg.debug("X_VECTOR_LENGTH: {0} Y_VECTOR_LENGTH: {1}".format(x_vector, y_vector))
             continue
 
-    # for i in xrange(new_cand_length):
-    #     if len(x_vector) is not len(y_vector):
-    #         print 'DIFFERENT!'
-    #         try:
-    #             print '1st case'
-    #             y_vector.append(new_candidate_points[i][line_no-1]+global_stfspc)
-    #         except:
-    #             print '2nd case'
-    #             y_vector.append(new_candidate_points[i+1][line_no]+global_stfspc)
-    #         print 'ADDED'
-    #     else:
-    #         pass
+    
 
     a, b, RR = linreg(x_vector, y_vector)
     # lg.debug("RR:{0}".format(RR))
@@ -340,7 +329,7 @@ if __name__ == "__main__":
 
 
     for line_no in xrange(40):
-        for i in xrange(20):
+        for i in xrange(10):
             new_candidate_points = pop_insert(new_candidate_points, line_no+1, global_stfspc)
         lg.debug("LINE: {1}\nNCP:{0}".format(new_candidate_points, line_no))
 
