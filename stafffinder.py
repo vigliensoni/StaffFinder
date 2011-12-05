@@ -206,10 +206,36 @@ def pop_insert(matrix, line_no, global_stfpsc):
 
     # FINDING THE INDEXES WITH THE MAXIMUM AND MINIMUM COST
     new_cand_length = len(new_candidate_points)
-    lg.debug("LINE_NO: {1} NCL:{0} MATRIX: {2}".format(new_cand_length, line_no, matrix)) 
-    x_vector = [new_candidate_points[i][0] for i in xrange(len(new_candidate_points))]
-    y_vector = [new_candidate_points[i][line_no] for i in xrange(len(new_candidate_points))]
+    # lg.debug("LINE_NO: {1} NCL:{0} MATRIX: {2}".format(new_cand_length, line_no, matrix)) 
+    x_vector = [new_candidate_points[i][0] for i in xrange(new_cand_length)]
+    # y_vector = [new_candidate_points[i][line_no] for i in xrange(new_cand_length)]
     # lg.debug("\nX_VECTOR:{0}\nY_VECTR{2}:{1}".format(x_vector, y_vector, line_no))
+
+
+    for i in xrange(new_cand_length):
+        try:
+            y_vector.append(new_candidate_points[i][line_no])
+            lg.debug("y_vector:{0}".format(y_vector))
+        except:
+            print 'EXCEPTION'
+            # y_vector.append(new_candidate_points[i][line_no-1]+global_stfspc)
+            y_vector.append(y_vector[-1]+global_stfspc)
+            lg.debug("X_VECTOR_LENGTH: {0} Y_VECTOR_LENGTH: {1}".format(x_vector, y_vector))
+            continue
+
+    # for i in xrange(new_cand_length):
+    #     if len(x_vector) is not len(y_vector):
+    #         print 'DIFFERENT!'
+    #         try:
+    #             print '1st case'
+    #             y_vector.append(new_candidate_points[i][line_no-1]+global_stfspc)
+    #         except:
+    #             print '2nd case'
+    #             y_vector.append(new_candidate_points[i+1][line_no]+global_stfspc)
+    #         print 'ADDED'
+    #     else:
+    #         pass
+
     a, b, RR = linreg(x_vector, y_vector)
     # lg.debug("RR:{0}".format(RR))
     for i in range(new_cand_length):
@@ -223,7 +249,7 @@ def pop_insert(matrix, line_no, global_stfpsc):
     dif_abs = [abs(y_vector[i]-linreg_y_vector[i]) for i in xrange(len(y_vector))]
     max_dif = max(dif_abs)
     idx_max_dif = dif_abs.index(max_dif)
-    # lg.debug("LINE {3}, DIFFERENCES:{0}, MAX DIF:{1}, IDX:{2}".format(dif, max_dif, idx_max_dif, line_no))
+    lg.debug("LINE {3}, DIFFERENCES:{0}, MAX DIF:{1}, IDX:{2}, DIF[IDX_MAX_DIF]:{4}".format(dif, max_dif, idx_max_dif, line_no, dif[idx_max_dif]))
     pop_x_vector = x_vector
     pop_y_vector = y_vector
   
@@ -232,12 +258,13 @@ def pop_insert(matrix, line_no, global_stfpsc):
     # lg.debug("popXvector:{0}, popYvector:{1}".format(pop_x_vector, pop_y_vector))
 
     a1, b1, RR1 = linreg(pop_x_vector, pop_y_vector)
-    # lg.debug("a:{0}, b:{1}, x_vector[line_no]:{2}".format(a, b, new_candidate_points[idx_max_dif][0]))
-    # lg.debug("a1:{0}, b1:{1}, x_vector[line_no]:{2}".format(a1, b1, new_candidate_points[idx_max_dif][0]))
-    if dif[idx_max_dif] < 0:
+    # lg.debug("a:{0}, b:{1}, line_no:{2}".format(a, b, line_no))
+    lg.debug("a1:{0}, b1:{1}, x_vector[line_no]:{2}".format(a1, b1, new_candidate_points[idx_max_dif][0]))
+    if dif[idx_max_dif] < -0.25 * global_stfspc:
+        lg.debug("NCP: {0}, line_no: {1}".format(new_candidate_points[idx_max_dif], line_no))
         new_candidate_points[idx_max_dif].pop(line_no)
         # print 'POP'
-    elif dif[idx_max_dif] > 0.1 * global_stfspc:
+    elif dif[idx_max_dif] > 0.25 * global_stfspc:
         new_candidate_points[idx_max_dif].insert(line_no, int(a1*new_candidate_points[idx_max_dif][0]+b1))
         # print 'INSERT'
 
@@ -312,7 +339,7 @@ if __name__ == "__main__":
     # lg.debug("\nNCP:\n{0}".format(new_candidate_points))         
 
 
-    for line_no in xrange(6):
+    for line_no in xrange(40):
         for i in xrange(20):
             new_candidate_points = pop_insert(new_candidate_points, line_no+1, global_stfspc)
         lg.debug("LINE: {1}\nNCP:{0}".format(new_candidate_points, line_no))
