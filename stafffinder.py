@@ -206,12 +206,12 @@ def pop_insert(matrix, line_no, global_stfpsc):
 
     # FINDING THE INDEXES WITH THE MAXIMUM AND MINIMUM COST
     new_cand_length = len(new_candidate_points)
+    lg.debug("LINE_NO: {1} NCL:{0} MATRIX: {2}".format(new_cand_length, line_no, matrix)) 
     x_vector = [new_candidate_points[i][0] for i in xrange(len(new_candidate_points))]
     y_vector = [new_candidate_points[i][line_no] for i in xrange(len(new_candidate_points))]
-
     # lg.debug("\nX_VECTOR:{0}\nY_VECTR{2}:{1}".format(x_vector, y_vector, line_no))
     a, b, RR = linreg(x_vector, y_vector)
-    lg.debug("RR:{0}".format(RR))
+    # lg.debug("RR:{0}".format(RR))
     for i in range(new_cand_length):
         linreg_y_vector.append(int(a*x_vector[i]+b))
     
@@ -223,7 +223,7 @@ def pop_insert(matrix, line_no, global_stfpsc):
     dif_abs = [abs(y_vector[i]-linreg_y_vector[i]) for i in xrange(len(y_vector))]
     max_dif = max(dif_abs)
     idx_max_dif = dif_abs.index(max_dif)
-    lg.debug("LINE {3}, DIFFERENCES:{0}, MAX DIF:{1}, IDX:{2}".format(dif, max_dif, idx_max_dif, line_no))
+    # lg.debug("LINE {3}, DIFFERENCES:{0}, MAX DIF:{1}, IDX:{2}".format(dif, max_dif, idx_max_dif, line_no))
     pop_x_vector = x_vector
     pop_y_vector = y_vector
   
@@ -236,10 +236,10 @@ def pop_insert(matrix, line_no, global_stfpsc):
     # lg.debug("a1:{0}, b1:{1}, x_vector[line_no]:{2}".format(a1, b1, new_candidate_points[idx_max_dif][0]))
     if dif[idx_max_dif] < 0:
         new_candidate_points[idx_max_dif].pop(line_no)
-        print 'POP'
-    elif dif[idx_max_dif] > 0.5*global_stfspc:
+        # print 'POP'
+    elif dif[idx_max_dif] > 0.1 * global_stfspc:
         new_candidate_points[idx_max_dif].insert(line_no, int(a1*new_candidate_points[idx_max_dif][0]+b1))
-        print 'INSERT'
+        # print 'INSERT'
 
 
 
@@ -309,15 +309,13 @@ if __name__ == "__main__":
     for v in candidate_points:
         if len(v) > 1:
             new_candidate_points.append(v)
-    lg.debug("\nNCP:\n{0}".format(new_candidate_points))         
+    # lg.debug("\nNCP:\n{0}".format(new_candidate_points))         
 
 
-    for line_no in xrange(7):
+    for line_no in xrange(6):
         for i in xrange(20):
             new_candidate_points = pop_insert(new_candidate_points, line_no+1, global_stfspc)
-
-
-    lg.debug("\n{0}".format(new_candidate_points))
+        lg.debug("LINE: {1}\nNCP:{0}".format(new_candidate_points, line_no))
 
 
 
