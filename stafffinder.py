@@ -249,11 +249,11 @@ def pop_insert(matrix, line_no, global_stfpsc):
     a1, b1, RR1 = linreg(pop_x_vector, pop_y_vector)
     # lg.debug("a:{0}, b:{1}, line_no:{2}".format(a, b, line_no))
     lg.debug("a1:{0}, b1:{1}, x_vector[line_no]:{2}".format(a1, b1, new_candidate_points[idx_max_dif][0]))
-    if dif[idx_max_dif] < -0.25 * global_stfspc:
+    if dif[idx_max_dif] < -0.15 * global_stfspc:
         lg.debug("NCP: {0}, line_no: {1}".format(new_candidate_points[idx_max_dif], line_no))
         new_candidate_points[idx_max_dif].pop(line_no)
         # print 'POP'
-    elif dif[idx_max_dif] > 0.25 * global_stfspc:
+    elif dif[idx_max_dif] > 0.15 * global_stfspc:
         new_candidate_points[idx_max_dif].insert(line_no, int(a1*new_candidate_points[idx_max_dif][0]+b1))
         # print 'INSERT'
 
@@ -328,11 +328,13 @@ if __name__ == "__main__":
     # lg.debug("\nNCP:\n{0}".format(new_candidate_points))         
 
 
-    for line_no in xrange(40):
-        for i in xrange(10):
-            new_candidate_points = pop_insert(new_candidate_points, line_no+1, global_stfspc)
-        lg.debug("LINE: {1}\nNCP:{0}".format(new_candidate_points, line_no))
-
+    try:
+        for line_no in xrange(49):
+            for i in xrange(40):
+                new_candidate_points = pop_insert(new_candidate_points, line_no+1, global_stfspc)
+            lg.debug("LINE: {1}\nNCP:{0}".format(new_candidate_points, line_no))
+    except:
+        print 'exception in number of lines'
 
 
 
