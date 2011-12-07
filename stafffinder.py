@@ -194,7 +194,7 @@ def vector_mean(vector):
     nums = [int(x) for x in vector]
     return sum(nums)/len(nums)
 
-def pop_insert(matrix, line_no, global_stfpsc):
+def pop_insert(matrix, line_no, global_stfpsc, changed_idx):
     """Pops out the minimum difference in x-value of a specific line in a Matrix, and inserts a value 
     based on linear regression whereas is the maximum difference. The differences are calculated
     among the vector's actual values and the fitness function calculated for that vector"""
@@ -203,6 +203,7 @@ def pop_insert(matrix, line_no, global_stfpsc):
     pop_x_vector = []
     pop_y_vector = []
     linreg_y_vector = []
+
 
     # FINDING THE INDEXES WITH THE MAXIMUM AND MINIMUM COST
     new_cand_length = len(new_candidate_points)
@@ -238,6 +239,8 @@ def pop_insert(matrix, line_no, global_stfpsc):
     dif_abs = [abs(y_vector[i]-linreg_y_vector[i]) for i in xrange(len(y_vector))]
     max_dif = max(dif_abs)
     idx_max_dif = dif_abs.index(max_dif)
+    changed_idx.append(idx_max_dif)
+
     lg.debug("LINE {3}, DIFFERENCES:{0}, MAX DIF:{1}, IDX:{2}, DIF[IDX_MAX_DIF]:{4}".format(dif, max_dif, idx_max_dif, line_no, dif[idx_max_dif]))
     pop_x_vector = x_vector
     pop_y_vector = y_vector
@@ -249,36 +252,23 @@ def pop_insert(matrix, line_no, global_stfpsc):
     a1, b1, RR1 = linreg(pop_x_vector, pop_y_vector)
     # lg.debug("a:{0}, b:{1}, line_no:{2}".format(a, b, line_no))
     lg.debug("a1:{0}, b1:{1}, x_vector[line_no]:{2}".format(a1, b1, new_candidate_points[idx_max_dif][0]))
-    if dif[idx_max_dif] < -0.15 * global_stfspc:
+    if dif[idx_max_dif] < -0.25 * global_stfspc:
+        lg.debug("CASE 1: POP")
         lg.debug("NCP: {0}, line_no: {1}".format(new_candidate_points[idx_max_dif], line_no))
         new_candidate_points[idx_max_dif].pop(line_no)
+
         # print 'POP'
-    elif dif[idx_max_dif] > 0.15 * global_stfspc:
+    elif dif[idx_max_dif] > 0.25 * global_stfspc:
+        lg.debug("CASE 2: INSERT")
         new_candidate_points[idx_max_dif].insert(line_no, int(a1*new_candidate_points[idx_max_dif][0]+b1))
+        
         # print 'INSERT'
 
+    return new_candidate_points, changed_idx
 
 
-    # min_value = min(dif)
-    # idx_min_value = dif.index(min_value)
-    # max_value = max(dif)
-    # idx_max_value = dif.index(max_value)
-    # lg.debug("\nDIFFERENCES:{2}, MIN IDX:{0}, MAX IDX:{1}".format(idx_min_value, idx_max_value, dif))
-
-
-    # POPING THE MINIMUM VALUE AND INSERTING A NEW ONE BASED ON LINEAR REGRESSION
-    # if abs(min_value) > 0.75*global_stfspc:
-    #     new_candidate_points[idx_min_value].pop(line_no)
-    #     print 'POP'
-    # if abs(max_value) > 0.75*global_stfspc :
-    #     new_candidate_points[idx_max_value].insert(line_no, int(a*x_vector[line_no]+b))
-    #     print 'INSERT'
-    # lg.debug("\nCORRECT_DIFF:{0}\n".format([new_candidate_points[i][line_no]-linreg_y_vector[i] for i in range(len(y_vector))]))
-    # lg.debug("\nNCP: {0}".format(new_candidate_points))
-
-    return new_candidate_points
-
-
+def fill_from_first(matrix, staff_no, line_no, global_stfpsc):
+    """Fills the non-filled points from the candidate points"""
 
 
 
@@ -321,20 +311,55 @@ if __name__ == "__main__":
 
     new_candidate_points = [] # final matrix with corrected points
 
+
     # CREATING NEW MATRIX WITH VALID CANDIDATE POINTS
     for v in candidate_points:
         if len(v) > 1:
             new_candidate_points.append(v)
-    # lg.debug("\nNCP:\n{0}".format(new_candidate_points))         
+    lg.debug("\nNCP:\n{0}".format(new_candidate_points))         
 
 
-    try:
-        for line_no in xrange(49):
-            for i in xrange(40):
-                new_candidate_points = pop_insert(new_candidate_points, line_no+1, global_stfspc)
-            lg.debug("LINE: {1}\nNCP:{0}".format(new_candidate_points, line_no))
-    except:
-        print 'exception in number of lines'
+    no_of_staves = 2
+    no_of_lines = 4
+    for s in xrange(no_of_staves):
+        changed_idx = []
+        remain_idx = [i for i in xrange(len(new_candidate_points))]
+        for l in xrange(no_of_lines):
+            if l == 1:
+                for i in xrange(10):
+                    new_candidate_points, changed_idx = pop_insert(new_candidate_points, (s)*(l), global_stfspc, changed_idx)
+                    changed_idx = list(set(changed_idx))
+            else:
+                pass
+        remain_idx = list(set(remain_idx) - set(changed_idx))
+        print changed_idx, remain_idx
+    
+    orig_x_vector = [new_candidate_points[i][0] for i in xrange(len(new_candidate_points))]  
+    x_vector = [new_candidate_points[i][0] for i in remain_idx]
+    y_vector = [new_candidate_points[i][1] for i in remain_idx]
+
+    print x_vector
+    print y_vector
+    a, b, RR = linreg(x_vector, y_vector)    
+
+
+    for i in changed_idx:
+        y_vector.insert(i, int(a*orig_x_vector[i]+b))
+    print y_vector
+
+
+    for i in xrange(len(new_candidate_points)):
+        new_candidate_points[i][1] = y_vector[i]
+0 
+
+
+    # try:
+    #     for line_no in xrange(49):
+    #         for i in xrange(40):
+    #             new_candidate_points = pop_insert(new_candidate_points, line_no+1, global_stfspc)
+    #         lg.debug("LINE: {1}\nNCP:{0}".format(new_candidate_points, line_no))
+    # except:
+    #     print 'exception in number of lines'
 
 
 
